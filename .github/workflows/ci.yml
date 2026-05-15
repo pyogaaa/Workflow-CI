@@ -30,10 +30,7 @@ jobs:
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         GITHUB_ACTIONS: true
       run: |
-        # Jika file MLProject ada di dalam folder 'MLProject', gunakan:
-        # mlflow run MLProject/ --experiment-name "Retraining_CI"
-        # Jika file MLProject ada di luar (root), gunakan:
-        mlflow run . --experiment-name "Retraining_CI"
+        mlflow run MLProject_Folder/ --experiment-name "Retraining_CI"
 
     - name: Wait for Registry
       run: sleep 60  # Memberi waktu DagsHub untuk memproses registrasi model (Penting!)
