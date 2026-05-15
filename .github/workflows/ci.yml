@@ -43,6 +43,10 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Build Docker Image via MLflow
+      env:
+        MLFLOW_TRACKING_URI: https://dagshub.com/pyogaaa/SMSML_Yoga-pratama.mlflow
+        MLFLOW_TRACKING_USERNAME: pyogaaa
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
       run: |
         # Pastikan model registry sudah terbaca di DagsHub
         mlflow models build-docker \
