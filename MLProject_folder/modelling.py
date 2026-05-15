@@ -11,16 +11,16 @@ from sklearn.metrics import accuracy_score
 
 def main():
     if os.getenv('GITHUB_ACTIONS'):
-        # Membaca dari environment variable di file YAML
+        # Membaca dari environment variable di file YAML GitHub Actions
         remote_url = os.getenv('MLFLOW_TRACKING_URI')
         mlflow.set_tracking_uri(remote_url)
     else:
-        # Tetap bisa jalan normal kalau kamu running lokal
+        # Tetap bisa jalan normal kalau running lokal di komputer
         dagshub.init(repo_owner='pyogaaa', repo_name='SMSML_Yoga-pratama', mlflow=True)
     
-    # 2. AKTIFKAN AUTOLOG
-    # Otomatis mencatat parameter, metrik, dan model scikit-learn
-    mlflow.sklearn.autolog()
+    # 2. AKTIFKAN AUTOLOG 
+    # log_models=True memastikan folder "model" beserta MLmodel, conda.yaml, dll. diunggah otomatis
+    mlflow.sklearn.autolog(log_models=True, registered_model_name="Crime_Model")
 
     # Path dinamis untuk file dan folder output
     base_dir = os.path.dirname(__file__)
@@ -33,8 +33,10 @@ def main():
         print(f"[!] File {data_path} tidak ditemukan!")
         return
 
-    # Load Data
+    # Load Data hasil kriteria 1 (Tanpa Tahapan Preprocessing Tambahan)
     df = pd.read_csv(data_path)
+    
+    # MENANGANI NILAI KOSONG (Wajib ada agar TF-IDF tidak error saat CI berjalan)
     df['processed_text'] = df['processed_text'].fillna('missing')
 
     # Feature Engineering
@@ -45,7 +47,7 @@ def main():
         X_raw, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # Vektorisasi Teks
+    # Vektorisasi Teks (TF-IDF)
     tfidf = TfidfVectorizer(max_features=2000)
     X_train_tfidf = tfidf.fit_transform(X_train_raw['processed_text']).toarray()
     X_test_tfidf = tfidf.transform(X_test_raw['processed_text']).toarray()
@@ -54,34 +56,28 @@ def main():
     X_train = np.hstack((X_train_tfidf, X_train_raw[['user_followers', 'user_friends', 'retweet_count', 'favorite_count']].values))
     X_test = np.hstack((X_test_tfidf, X_test_raw[['user_followers', 'user_friends', 'retweet_count', 'favorite_count']].values))
 
-    # 3. Training Model
-    with mlflow.start_run(run_name="Base_Model_RF_Autolog", nested=True):
+    # 3. Training Model dalam MLflow Run Block
+    with mlflow.start_run(run_name="Base_Model_RF_Autolog"):
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
 
         y_pred = model.predict(X_test)
         acc = accuracy_score(y_test, y_pred)
         
-        # --- PENYIMPANAN FISIK DI SUB-FOLDER OUTPUT ---
+        # --- PENYIMPANAN FISIK DI SUB-FOLDER OUTPUT LOKAL ---
         model_save_path = os.path.join(output_dir, 'model_base.pkl')
         tfidf_save_path = os.path.join(output_dir, 'tfidf_vectorizer.pkl')
         
         joblib.dump(model, model_save_path)
         joblib.dump(tfidf, tfidf_save_path)
 
-        # Log file tersebut juga sebagai artefak di MLflow
+        # Mengunggah pkl tambahan ke root artifact MLflow DagsHub
         mlflow.log_artifact(model_save_path)
         mlflow.log_artifact(tfidf_save_path)
 
-        print(f"\n--- BASE MODEL LOGGED TO LOCAL & DAGSHUB ---")
+        print(f"\n--- BASE MODEL LOGGED TO LOCAL & DAGSHUB VIA AUTOLOG ---")
         print(f"Accuracy: {acc*100:.2f}%")
         print(f"File output tersimpan di: {output_dir}")
-        
-        mlflow.sklearn.log_model(
-            sk_model=model, 
-            artifact_path="model",
-            registered_model_name="Crime_Model" # Nama ini harus sama dengan yang di YAML
-        )
 
 if __name__ == "__main__":
     main()
