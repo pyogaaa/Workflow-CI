@@ -18,8 +18,6 @@ def main():
         # Tetap bisa jalan normal kalau kamu running lokal
         dagshub.init(repo_owner='pyogaaa', repo_name='SMSML_Yoga-pratama', mlflow=True)
     
-    mlflow.set_experiment("Latihan_Crime_Classification")
-    
     # 2. AKTIFKAN AUTOLOG
     # Otomatis mencatat parameter, metrik, dan model scikit-learn
     mlflow.sklearn.autolog()
@@ -57,7 +55,7 @@ def main():
     X_test = np.hstack((X_test_tfidf, X_test_raw[['user_followers', 'user_friends', 'retweet_count', 'favorite_count']].values))
 
     # 3. Training Model
-    with mlflow.start_run(run_name="Base_Model_RF_Autolog"):
+    with mlflow.start_run(run_name="Base_Model_RF_Autolog", nested=True):
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
 
