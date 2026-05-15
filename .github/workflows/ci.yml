@@ -31,7 +31,7 @@ jobs:
         GITHUB_ACTIONS: true
       run: |
         # Menggunakan ./ memastikan MLflow membacanya sebagai folder lokal
-        mlflow run ./MLProject_folder --experiment-name "Retraining_CI"
+        mlflow run ./MLProject_folder --experiment-name "Retraining_CI" --env-manager local
 
     - name: Wait for Registry
       run: sleep 60

@@ -1,6 +1,5 @@
 name: Crime_Tweet_Retraining
-
-conda_env: conda.yaml
+base_docker_image: python:3.12
 
 entry_points:
   main:
